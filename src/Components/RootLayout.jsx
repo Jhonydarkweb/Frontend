@@ -3,12 +3,9 @@ import { Outlet } from "@tanstack/react-router"
 
 const RootLayout = () => {
     return (
-        <div>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#09090b' }}>
             <NavBar />
-            <div className="container mx-auto px-4 py-8">
-                {/* Outlet for nested routes */}
-                <Outlet />
-            </div>
+            <Outlet />
         </div>
     )
 }

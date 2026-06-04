@@ -1,68 +1,72 @@
-
-import { useState, useRef  } from 'react'
-import { useLogin } from '../Hooks/useLogin'
+import { useRef, useContext } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { AuthContext } from '../Context/AuthContext'
-import { useContext } from 'react'
+import { decodeToken } from '../Services/AuthService'
+
+const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
 
 export default function Login() {
-
-    // 3. Consumir el contexto
-    const { setUser } = useContext(AuthContext)
-    
+    const { login, isLoading, isError } = useContext(AuthContext)
     const emailRef = useRef()
     const passwordRef = useRef()
-    const [error, setError] = useState('')
-    
-    
-    const { login } = useLogin()
-    
-   
+    const navigate = useNavigate()
 
-    const handleLogin = () => {
-        const email = emailRef.current.value;
-        const password = passwordRef.current.value;
-        const isSuccess = login(email, password);
-        if(!isSuccess)   
-        {
-            setError("Credenciales incorrectas");
-        }
-        else
-        {              
-            setUser(email)        
+    async function handleSubmit(e) {
+        e.preventDefault()
+        try {
+            await login(emailRef.current.value, passwordRef.current.value)
+            const token = localStorage.getItem('authToken')
+            const decoded = decodeToken(token)
+            if (decoded[ROLE_CLAIM] === 'admin') {
+                navigate({ to: '/admin' })
+            } else {
+                navigate({ to: '/home' })
+            }
+        } catch {
+            // error is surfaced via isError from context
         }
     }
 
-
     return (
-        <>        
-            <div className="max-w-sm mx-auto mt-10 p-6 bg-gray-50 rounded-lg shadow">
+        <div style={{ flex: 1, background: '#09090b', minHeight: 'calc(100vh - 57px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <form
+                onSubmit={handleSubmit}
+                style={{ width: '100%', maxWidth: '380px', padding: '40px', background: '#18181b', border: '1px solid #27272a', borderRadius: '16px', boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}
+            >
+                <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#fafafa', textAlign: 'center', marginBottom: '28px', letterSpacing: '-0.02em' }}>
+                    Sign In
+                </h2>
+
                 <input
-                    type="email"
-                    placeholder="Correo"
+                    type="text"
+                    placeholder="Email"
                     ref={emailRef}
-                    className="w-full px-3 py-2 mb-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    style={{ width: '100%', padding: '10px 14px', marginBottom: '12px', background: '#09090b', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fafafa', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
-                <br />
+
                 <input
                     type="password"
-                    placeholder="Contraseña"
+                    placeholder="Password"
                     ref={passwordRef}
-                    className="w-full px-3 py-2 mb-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    style={{ width: '100%', padding: '10px 14px', marginBottom: '24px', background: '#09090b', border: '1px solid #3f3f46', borderRadius: '8px', color: '#fafafa', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
-                <br />
+
                 <button
-                    onClick={handleLogin}
-                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    type="submit"
+                    disabled={isLoading}
+                    style={{ width: '100%', padding: '10px', background: isLoading ? '#4338ca' : '#4f46e5', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: '600', cursor: isLoading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
                 >
-                    Ingresar
+                    {isLoading ? 'Signing in...' : 'Sign In'}
                 </button>
-                {error && (
-                    <p className="mt-2 text-sm text-red-600">
-                    {error}
+
+                {isError && (
+                    <p style={{ marginTop: '16px', fontSize: '13px', textAlign: 'center', color: '#f87171' }}>
+                        Invalid credentials. Please try again.
                     </p>
                 )}
-                </div>
-      
-        </>
+            </form>
+        </div>
     )
 }
